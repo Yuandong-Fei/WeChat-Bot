@@ -132,7 +132,8 @@ class WebWeixin(object):
                              'voip', 'blogappweixin', 'weixin', 'brandsessionholder', 'weixinreminder', 'wxid_novlwrv3lqwv11', 'gh_22b87fa7cb3c', 'officialaccounts', 'notification_messages', 'wxid_novlwrv3lqwv11', 'gh_22b87fa7cb3c', 'wxitil', 'userexperience_alarm', 'notification_messages']
         self.TimeOut = 10  # 同步最短时间间隔（单位：秒）
         self.media_count = -1
-        self.groupindex = ["ucsb22er足球篮球讨论群","UCSB某不知名音乐群","UCSB二次元交流小组","UCSB健身群","足球篮球群"]
+        with open('group.json', 'r') as f:
+            self.groupindex = json.load(f)
         self.revokewords = ["dylanb",
                             "王同学",
                             "王青蛙",
@@ -1210,12 +1211,16 @@ class WebWeixin(object):
         if "/group.add" in word:
             try:
                 self.groupindex.append(word.split("(")[1][0:-1])
+                with open("group.json","w") as f:
+                    json.dump(self.groupindex, f)
             except ValueError as e:
                 print("没有这个群")
 
         elif "/group.remove" in word:
             try:
                 self.goroupindex.remove(word.split("(")[1][0:-1])
+                with open("group.json","w") as f:
+                    json.dump(self.groupindex, f)
             except ValueError as e:
                 print("没有这个群")
         # url = 'http://www.xiaodoubi.com/bot/chat.php'
