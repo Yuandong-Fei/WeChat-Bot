@@ -149,6 +149,8 @@ class WebWeixin(object):
                             toString(self.groupindex),
                             toString(self.groupindex)
                             ]
+        #用于和新人打招呼
+        self.greeting = ""
         self.cookie = http.cookiejar.CookieJar()
         opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookie))
         opener.addheaders = [('User-agent', self.user_agent)]
@@ -902,7 +904,13 @@ class WebWeixin(object):
                 self._safe_open(video)
                 #system message
             elif msgType == 10000:
-                pass
+                if "加入" in content:
+                    if self.webwxsendmsg(("欢迎新人"+content.split("\"")[1]+"\n"+self.greeting), msg['FromUserName']): #注意这里会现实你对此人的备注 别瞎写
+                        print('自动回复: ' + "欢迎新人")
+                        logging.info('自动回复: ' + "欢迎新人")
+                    else:
+                        print('自动回复失败')
+                    logging.info('自动回复失败')
             elif msgType == 10002:
                 raw_msg = {'raw_msg': msg, 'message': '%s 撤回了一条消息' % name}
                 self._showMsg(raw_msg)
@@ -1198,8 +1206,18 @@ class WebWeixin(object):
         for i in self.revokewords:
             if i in word:
                 return str(self.replaywords[self.revokewords.index(i)])
-        else:
-            pass
+
+        if "/group.add" in word:
+            try:
+                self.groupindex.append(word.split("(")[1][0:-1])
+            except ValueError as e:
+                print("没有这个群")
+
+        elif "/group.remove" in word:
+            try:
+                self.goroupindex.remove(word.split("(")[1][0:-1])
+            except ValueError as e:
+                print("没有这个群")
         # url = 'http://www.xiaodoubi.com/bot/chat.php'
         # try:
         #     r = requests.post(url, data={'chat': word})
