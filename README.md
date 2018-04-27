@@ -5,11 +5,12 @@ The bot is current under construction and welcoming for comments and criticisms.
 ## To do List (Most priority to least) 
 
 微信群功能
-- [ ] 欢迎新人
+
+- [x] 欢迎新人
 - [ ] 提供新人的名片,性别,名字,专业
 - [ ] 学校的一些基本常识问题（例如umail, I20）
-- [ ] 群列表的修改
-- [ ] 提供群组名字
+- [x] 群列表的修改
+- [x] 提供群组名字
 - [ ] 自动拉别人入群（请求QRcode, 人数 < 100 ）
 - [ ] 机器人小号发送链接(人数 > 100) 
 - [ ] 防撤回 (可有可无...这个反人类)
