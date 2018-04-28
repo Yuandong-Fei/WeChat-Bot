@@ -71,13 +71,7 @@ def _decode_dict(data):
     return rv
 
 
-def toString(groupindex):
-    i = 1
-    indextostring = ""
-    for name in groupindex:
-        indextostring = indextostring + str(i) + "." + name + "\n"
-        i += 1
-    return indextostring
+
 
 class WebWeixin(object):
 
@@ -132,23 +126,23 @@ class WebWeixin(object):
                              'voip', 'blogappweixin', 'weixin', 'brandsessionholder', 'weixinreminder', 'wxid_novlwrv3lqwv11', 'gh_22b87fa7cb3c', 'officialaccounts', 'notification_messages', 'wxid_novlwrv3lqwv11', 'gh_22b87fa7cb3c', 'wxitil', 'userexperience_alarm', 'notification_messages']
         self.TimeOut = 10  # 同步最短时间间隔（单位：秒）
         self.media_count = -1
-        self.groupindex = ["ucsb22er足球篮球讨论群","UCSB某不知名音乐群","UCSB二次元交流小组","UCSB健身群","足球篮球群"]
         self.revokewords = ["dylanb",
                             "王同学",
                             "王青蛙",
                             "苏子",
-                            "琉璃",
-                            "party",
-                            "群目录"
+                            "琉璃"
                             ]
         self.replaywords = ["i社的铁杆粉丝！",
                             "mirror重度上瘾者\nSakura 坚定支持者\n足控",
                             "mirror重度上瘾者\nSakura 坚定支持者\n足控",
                             "拥有4块腹肌的男人",
                             "请问您今天要来点兔子吗",
-                            toString(self.groupindex),
-                            toString(self.groupindex)
                             ]
+        #用于和新人打招呼
+        with open('group.json', 'r') as f:
+            self.groupindex = json.load(f)
+        self.greeting1 = "新主人看一下组织条例。我是琉璃。请问琉璃应该如何称呼您？"
+        self.greeting2 = "本组织有许多神秘的小房间。若主人有兴趣了解，可以向琉璃打听哦。暗号是 party。"
         self.cookie = http.cookiejar.CookieJar()
         opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookie))
         opener.addheaders = [('User-agent', self.user_agent)]
@@ -190,6 +184,14 @@ class WebWeixin(object):
             self.uuid = pm.group(2)
             return code == '200'
         return False
+
+    def toString(groupindex):
+        i = 1
+        indextostring = ""
+        for name in groupindex:
+            indextostring = indextostring + str(i) + "." + name + "\n"
+            i += 1
+        return indextostring
 
     def genQRCode(self):
         #return self._showQRCodeImg()
@@ -446,6 +448,15 @@ class WebWeixin(object):
         retcode = pm.group(1)
         selector = pm.group(2)
         return [retcode, selector]
+
+    def invite(self,invitemember,chatroom):
+        url = self.base_uri+"/webwxupdatechatroom?fun=invitemember"
+        params = {
+            "InviteMemberList": invitemember,
+            "ChatRoomName": chatroom,
+            "BaseRequest": self.BaseRequest
+        }
+
 
     def webwxsync(self):
         url = self.base_uri + \
@@ -832,7 +843,7 @@ class WebWeixin(object):
 #自己加的代码-------------------------------------------#
                 if self.autoReplyMode:
                 # if msg['raw_msg']['FromUserName'][:2] == '@@':
-                  ans = str(self._xiaodoubi(content) )
+                  ans = str(self._xiaodoubi(content,name) )
                           #'\n[微信机器人自动回复]'
 
                   if ans != "None":
@@ -902,7 +913,13 @@ class WebWeixin(object):
                 self._safe_open(video)
                 #system message
             elif msgType == 10000:
-                pass
+                if "加入" in content:
+                    if self.webwxsendmsg(("与"+content.split("\"")[1]+"签订成功。\n"+self.greeting1), msg['FromUserName']) and self.webwxsendmsg(("欢迎新人"+content.split("\"")[1]+"\n"+self.greeting2), msg['FromUserName']): #注意这里会现实你对此人的备注 别瞎写
+                        print('自动回复: ' + "欢迎新人")
+                        logging.info('自动回复: ' + "欢迎新人")
+                    else:
+                        print('自动回复失败')
+                    logging.info('自动回复失败')
             elif msgType == 10002:
                 raw_msg = {'raw_msg': msg, 'message': '%s 撤回了一条消息' % name}
                 self._showMsg(raw_msg)
@@ -950,7 +967,7 @@ class WebWeixin(object):
                     r = self.webwxsync()
                 elif selector == '0':
                     time.sleep(1)
-            if (time.time() - self.lastCheckTs) <= 20:
+            if (time.time() - self.lastCheckTs) <= 10:
                 time.sleep(time.time() - self.lastCheckTs)
 
     def sendMsg(self, name, word, isfile=False):
@@ -1194,12 +1211,43 @@ class WebWeixin(object):
 
         return ''
 
-    def _xiaodoubi(self, word):
+    def _xiaodoubi(self, word,name):
         for i in self.revokewords:
             if i in word:
                 return str(self.replaywords[self.revokewords.index(i)])
-        else:
-            pass
+
+        if "party" in word or word == "group" or "群目录" in word:
+            with open('group.json', 'r') as f:
+                groupindex = json.load(f)
+            group=""
+            for j in groupindex:
+                group = group+j+"\n"
+
+            return (str(group)+"\n若主人想要加入哪个房间，请私下里和琉璃说哦。务必用 我要什么群 来表达强烈的渴望哦。不然琉璃不会理你的")
+
+        elif "/group.append" in word:
+            try:
+                self.groupindex.append(word.split("(")[1][0:-1])
+                with open("group.json","w") as f:
+                    json.dump(self.groupindex, f)
+                return str("Successfully Append"+word.split("(")[1][0:-1])
+            except ValueError as e:
+                print("没有这个群")
+
+        elif "/group.remove" in word:
+            try:
+                self.groupindex.remove(word.split("(")[1][0:-1])
+                with open("group.json","w") as f:
+                    json.dump(self.groupindex, f)
+                print("Successfully remove"+word.split("(")[1][0:-1])
+                return str("Successfully Remove" + word.split("(")[1][0:-1])
+            except ValueError as e:
+                print("没有这个群")
+        elif "我要" in word:
+            groupindexnum = {}
+            with open("groupkey.json","r") as f:
+                json.dump(groupindexnum,f)
+            self.invite(groupindexnum[word.split("要")[1]],name)
         # url = 'http://www.xiaodoubi.com/bot/chat.php'
         # try:
         #     r = requests.post(url, data={'chat': word})
